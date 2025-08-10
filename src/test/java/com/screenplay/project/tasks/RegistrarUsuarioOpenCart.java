@@ -10,13 +10,18 @@ import net.serenitybdd.screenplay.waits.WaitUntil;
 
 import static com.screenplay.project.utils.Constants.TIME_SHORT;
 import static net.serenitybdd.screenplay.matchers.WebElementStateMatchers.isEnabled;
+import static net.serenitybdd.screenplay.matchers.WebElementStateMatchers.isClickable;
 
 public class RegistrarUsuarioOpenCart implements Task {
     @Override
     public <T extends Actor> void performAs(T actor) {
-        actor.attemptsTo(WaitUntil.the(OpenCartHomePage.BOTON_MI_CUENTA, isEnabled()).forNoMoreThan(TIME_SHORT).seconds(),
-                Click.on(OpenCartHomePage.BOTON_MI_CUENTA));
-        actor.attemptsTo(Click.on(OpenCartHomePage.ENLACE_REGISTRAR));
+        actor.attemptsTo(
+                WaitUntil.the(OpenCartHomePage.BOTON_MI_CUENTA, isClickable()).forNoMoreThan(TIME_SHORT).seconds(),
+                Click.on(OpenCartHomePage.BOTON_MI_CUENTA)
+        );
+        actor.attemptsTo(
+                Click.on(OpenCartHomePage.ENLACE_REGISTRAR)
+        );
     }
 
     public static RegistrarUsuarioOpenCart SeleccionarMiCuenta() {
