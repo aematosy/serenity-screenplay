@@ -78,21 +78,37 @@ pipeline {
     post {
         always {
             script {
-                // Determinar resultado basado en fallos de pruebas
-                if (fileExists('target/failsafe-reports/')) {
-                    def failedTests = bat(
-                        returnStdout: true,
-                        script: 'dir target\\failsafe-reports\\*FAILED*.txt 2>nul | find "File(s)" || echo 0 File(s)'
-                    ).trim()
+                // Verificar si hubo fallos basándose en el reporte de Serenity
+                if (fileExists('target/site/serenity/index.html')) {
+                    def buildLogContent = currentBuild.rawBuild.getLog(100).join('\n')
 
-                    if (failedTests.contains('0 File(s)')) {
-                        echo 'Todas las pruebas pasaron'
-                    } else {
-                        echo 'Algunas pruebas fallaron'
+                    if (buildLogContent.contains('Tests failed') && buildLogContent.contains('| 1')) {
+                        echo 'Algunas pruebas fallaron - marcando como UNSTABLE'
                         currentBuild.result = 'UNSTABLE'
+                    } else if (buildLogContent.contains('Tests failed') && !buildLogContent.contains('| 0')) {
+                        echo 'Pruebas fallaron - marcando como UNSTABLE'
+                        currentBuild.result = 'UNSTABLE'
+                    } else {
+                        echo 'Todas las pruebas pasaron'
                     }
+                } else {
+                    echo 'No se encontró reporte de Serenity'
+                    currentBuild.result = 'FAILURE'
                 }
             }
+        }
+
+        success {
+            echo 'Pipeline completado - todas las pruebas pasaron'
+        }
+
+        unstable {
+            echo 'Pipeline completado con pruebas fallidas'
+            echo 'Revisar el reporte de Serenity para detalles'
+        }
+
+        failure {
+            echo 'Pipeline falló - error en la ejecución'
         }
     }
 }
