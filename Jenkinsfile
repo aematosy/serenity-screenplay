@@ -1,13 +1,11 @@
 pipeline {
     agent any
 
-    // Aquí defines los parámetros que aparecerán al "Construir con Parámetros"
     parameters {
-        choice(name: 'ESCENARIO', choices: ['@NuevoUsuario', '@OtroTag', '@OtroMas'], description: 'Selecciona el tag de Cucumber a ejecutar')
+        choice(name: 'ESCENARIO', choices: ['@NuevoUsuario'], description: 'Selecciona el tag de Cucumber a ejecutar')
     }
 
     environment {
-        // Combina el entorno de CI con el tag seleccionado
         MAVEN_OPTS = "-Dserenity.test.environment=ci -Dcucumber.filter.tags=${params.ESCENARIO}"
     }
 
@@ -20,7 +18,7 @@ pipeline {
         stage('Build and Test') {
             steps {
                 echo "Ejecutando pruebas con el tag: ${params.ESCENARIO}"
-                sh 'mvn clean verify serenity:aggregate'
+                bat 'mvn clean verify serenity:aggregate'
             }
         }
     }
