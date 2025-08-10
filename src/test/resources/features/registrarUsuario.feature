@@ -18,4 +18,3 @@ Feature: Registro de nuevo usuario en OpenCart
       | nombre  | apellido | email     | telefono  | password |
       | Adrian  | Matos    | aleatorio | 967781772 | 123456   |
       | Enrique | Bencomo  | aleatorio | 999849655 | 654231   |
-      |         |          | aleatorio | 999849655 | 654231   |
