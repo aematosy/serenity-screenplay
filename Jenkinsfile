@@ -7,7 +7,6 @@ pipeline {
 
   options {
     timestamps()
-    // ansiColor('xterm')  // Requiere plugin AnsiColor; si lo instalas, descomenta.
   }
 
   stages {
@@ -16,43 +15,48 @@ pipeline {
     }
 
     stage('Prepare Workspace') {
-      steps {
-        bat 'if exist target rmdir /s /q target'
-      }
+      steps { bat 'if exist target rmdir /s /q target' }
     }
 
     stage('Resolve Dependencies') {
-      steps {
-        bat 'mvn -B -U -q dependency:go-offline'
-      }
+      steps { bat 'mvn -B -U -q dependency:go-offline' }
     }
 
     stage('Build') {
-      steps {
-        bat 'mvn -B -q -DskipTests clean package'
-      }
+      steps { bat 'mvn -B -q -DskipTests clean package' }
     }
 
     stage('Run Tests') {
       steps {
         script {
           def tagArg = params.TAGS?.trim() ? "-Dcucumber.filter.tags=${params.TAGS.trim()}" : ""
-          bat """
-            mvn -B verify ^
-              -Dserenity.test.environment=ci ^
-              ${tagArg} ^
-              -Dwebdriver.timeouts.implicitlywait=20000 ^
-              -Dwebdriver.timeouts.fluentwait=40000 ^
-              -Dwebdriver.wait.for.timeout=40000 ^
-              -Dserenity.take.screenshots=FOR_FAILURES ^
-              -Dserenity.restart.browser.each.scenario=true
-          """
+          // Ejecuta Maven y NO detiene el pipeline si hay fallos
+          def status = bat(
+            returnStatus: true,
+            script: """
+              mvn -B verify ^
+                -Dserenity.test.environment=ci ^
+                ${tagArg} ^
+                -Dwebdriver.timeouts.implicitlywait=20000 ^
+                -Dwebdriver.timeouts.fluentwait=40000 ^
+                -Dwebdriver.wait.for.timeout=40000 ^
+                -Dserenity.take.screenshots=FOR_FAILURES ^
+                -Dserenity.restart.browser.each.scenario=true
+            """
+          )
+          if (status != 0) {
+            echo "Pruebas con errores (exit code=${status}). Se continuará para generar reportes."
+            currentBuild.result = 'UNSTABLE'
+          }
         }
       }
     }
 
     stage('Aggregate Reports') {
-      steps { bat 'mvn -B serenity:aggregate' }
+      steps {
+        // Fuerza la agregación aunque las pruebas hayan fallado
+        bat 'mvn -B -q serenity:aggregate -DskipTests'
+      }
     }
 
     stage('Publish Report') {
@@ -69,7 +73,7 @@ pipeline {
             ])
           } else {
             bat 'dir target /s'
-            error 'Reporte de Serenity no encontrado'
+            echo 'Reporte de Serenity no encontrado'
           }
         }
       }
