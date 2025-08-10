@@ -1,25 +1,25 @@
 pipeline {
     agent any
 
-    environment {
-        // Combina el tag del parámetro con la propiedad de entorno 'ci' de serenity.conf
-        MAVEN_OPTS = "-Dserenity.test.environment=ci -Dcucumber.filter.tags=${params.TAG_CUCUMBER}"
+    // Aquí defines los parámetros que aparecerán al "Construir con Parámetros"
+    parameters {
+        choice(name: 'ESCENARIO', choices: ['@NuevoUsuario', '@OtroTag', '@OtroMas'], description: 'Selecciona el tag de Cucumber a ejecutar')
     }
 
-    parameters {
-        // Define el parámetro de elección aquí para que Jenkins lo muestre
-        choice(name: 'TAG_CUCUMBER', choices: ['@NuevoUsuario', '@OtroTag', '@OtroMas'], description: 'Selecciona el tag de Cucumber a ejecutar')
+    environment {
+        // Combina el entorno de CI con el tag seleccionado
+        MAVEN_OPTS = "-Dserenity.test.environment=ci -Dcucumber.filter.tags=${params.ESCENARIO}"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Jenkins automáticamente extrae el código del repositorio
+                echo 'Obteniendo el código del repositorio...'
             }
         }
         stage('Build and Test') {
             steps {
-                echo "Ejecutando pruebas con el tag: ${params.TAG_CUCUMBER}"
+                echo "Ejecutando pruebas con el tag: ${params.ESCENARIO}"
                 sh 'mvn clean verify serenity:aggregate'
             }
         }
