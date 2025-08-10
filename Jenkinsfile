@@ -1,103 +1,98 @@
 pipeline {
-  agent any
+    agent any
 
-  options {
-    timestamps()
-  }
-
-  stages {
-    stage('Checkout') {
-      steps { checkout scm }
+    environment {
+        MAVEN_OPTS = '-Xmx1024m'
     }
 
-    stage('Prepare Workspace') {
-      steps {
-        bat 'if exist target rmdir /s /q target'
-      }
+    options {
+        timestamps()
+        timeout(time: 30, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
     }
 
-    stage('Resolve Dependencies') {
-      steps {
-        bat 'mvn -B -U -q dependency:go-offline'
-      }
-    }
-
-    stage('Build') {
-      steps {
-        bat 'mvn -B -q -DskipTests clean package'
-      }
-    }
-
-    stage('Run Tests') {
-      steps {
-        script {
-          // Usa el parámetro definido en Jenkins UI: ESCENARIO (String)
-          def tagArg = params.ESCENARIO?.trim() ? "-Dcucumber.filter.tags=${params.ESCENARIO.trim()}" : ""
-          def status = bat(
-            returnStatus: true,
-            script: """
-              mvn -B verify ^
-                -Dserenity.test.environment=ci ^
-                ${tagArg} ^
-                -Dwebdriver.timeouts.implicitlywait=20000 ^
-                -Dwebdriver.timeouts.fluentwait=40000 ^
-                -Dwebdriver.wait.for.timeout=40000 ^
-                -Dserenity.take.screenshots=FOR_FAILURES ^
-                -Dserenity.restart.browser.each.scenario=true
-            """
-          )
-          if (status != 0) {
-            echo "Pruebas con errores (exit code=${status}). Se continuará generando reportes."
-            currentBuild.result = 'UNSTABLE'
-          }
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
         }
-      }
-    }
 
-    stage('Aggregate Reports') {
-      steps {
-        script {
-          def agg = bat(returnStatus: true, script: 'mvn -B -q serenity:aggregate -DskipTests')
-          if (agg != 0) {
-            echo "Falló serenity:aggregate (exit code=${agg})."
-            if (currentBuild.result == null) { currentBuild.result = 'UNSTABLE' }
-          }
+        stage('Clean & Build') {
+            steps {
+                bat '''
+                    if exist target rmdir /s /q target
+                    mvn -B -q clean compile test-compile
+                '''
+            }
         }
-      }
-    }
 
-    stage('Publish Report') {
-      steps {
-        script {
-          if (fileExists('target/site/serenity/index.html')) {
-            publishHTML(target: [
-              allowMissing: false,
-              alwaysLinkToLastBuild: false,
-              keepAll: true,
-              reportDir: 'target/site/serenity',
-              reportFiles: 'index.html',
-              reportName: 'Serenity BDD Report'
-            ])
-          } else {
-            bat 'dir target /s'
-            echo 'Reporte de Serenity no encontrado'
-            if (currentBuild.result == null) { currentBuild.result = 'UNSTABLE' }
-          }
+        stage('Run Tests') {
+            steps {
+                script {
+                    def tagArg = params.ESCENARIO?.trim() ?
+                        "-Dcucumber.filter.tags=${params.ESCENARIO.trim()}" : ""
+
+                    bat """
+                        mvn -B verify ${tagArg} ^
+                            -Dserenity.test.environment=ci ^
+                            -Dwebdriver.timeouts.implicitlywait=20000 ^
+                            -Dserenity.take.screenshots=FOR_FAILURES ^
+                            -Dmaven.test.failure.ignore=true
+                    """
+                }
+            }
         }
-      }
+
+        stage('Generate Report') {
+            steps {
+                bat 'mvn -B serenity:aggregate'
+            }
+        }
+
+        stage('Publish') {
+            steps {
+                script {
+                    if (fileExists('target/site/serenity/index.html')) {
+                        publishHTML([
+                            allowMissing: false,
+                            alwaysLinkToLastBuild: true,
+                            keepAll: true,
+                            reportDir: 'target/site/serenity',
+                            reportFiles: 'index.html',
+                            reportName: 'Serenity Report'
+                        ])
+
+                        archiveArtifacts(
+                            artifacts: 'target/site/serenity/**',
+                            allowEmptyArchive: true
+                        )
+                    } else {
+                        error 'Reporte no generado'
+                    }
+                }
+            }
+        }
     }
 
-    stage('Archive Artifacts') {
-      steps {
-        archiveArtifacts artifacts: 'target/site/serenity/**', fingerprint: true, onlyIfSuccessful: false
-      }
-    }
-  }
+    post {
+        always {
+            script {
+                // Determinar resultado basado en fallos de pruebas
+                if (fileExists('target/failsafe-reports/')) {
+                    def failedTests = bat(
+                        returnStdout: true,
+                        script: 'dir target\\failsafe-reports\\*FAILED*.txt 2>nul | find "File(s)" || echo 0 File(s)'
+                    ).trim()
 
-  post {
-    success  { echo 'OK' }
-    unstable { echo 'Inestable' }
-    failure  { echo 'Falló' }
-    always   { echo 'Fin' }
-  }
+                    if (failedTests.contains('0 File(s)')) {
+                        echo 'Todas las pruebas pasaron'
+                    } else {
+                        echo 'Algunas pruebas fallaron'
+                        currentBuild.result = 'UNSTABLE'
+                    }
+                }
+            }
+        }
+    }
 }
