@@ -7,19 +7,16 @@ pipeline {
 
   options {
     timestamps()
-    ansiColor('xterm')
+    // ansiColor('xterm')  // Requiere plugin AnsiColor; si lo instalas, descomenta.
   }
 
   stages {
     stage('Checkout') {
-      steps {
-        checkout scm
-      }
+      steps { checkout scm }
     }
 
     stage('Prepare Workspace') {
       steps {
-        bat 'echo Limpiando workspace'
         bat 'if exist target rmdir /s /q target'
       }
     }
@@ -55,9 +52,7 @@ pipeline {
     }
 
     stage('Aggregate Reports') {
-      steps {
-        bat 'mvn -B serenity:aggregate'
-      }
+      steps { bat 'mvn -B serenity:aggregate' }
     }
 
     stage('Publish Report') {
