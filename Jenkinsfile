@@ -1,10 +1,6 @@
 pipeline {
   agent any
 
-  parameters {
-    string(name: 'TAGS', defaultValue: '', description: 'Tag de Cucumber (opcional)')
-  }
-
   options {
     timestamps()
   }
@@ -15,22 +11,28 @@ pipeline {
     }
 
     stage('Prepare Workspace') {
-      steps { bat 'if exist target rmdir /s /q target' }
+      steps {
+        bat 'if exist target rmdir /s /q target'
+      }
     }
 
     stage('Resolve Dependencies') {
-      steps { bat 'mvn -B -U -q dependency:go-offline' }
+      steps {
+        bat 'mvn -B -U -q dependency:go-offline'
+      }
     }
 
     stage('Build') {
-      steps { bat 'mvn -B -q -DskipTests clean package' }
+      steps {
+        bat 'mvn -B -q -DskipTests clean package'
+      }
     }
 
     stage('Run Tests') {
       steps {
         script {
-          def tagArg = params.TAGS?.trim() ? "-Dcucumber.filter.tags=${params.TAGS.trim()}" : ""
-          // Ejecuta Maven y NO detiene el pipeline si hay fallos
+          // Usa el parámetro definido en Jenkins UI: ESCENARIO (String)
+          def tagArg = params.ESCENARIO?.trim() ? "-Dcucumber.filter.tags=${params.ESCENARIO.trim()}" : ""
           def status = bat(
             returnStatus: true,
             script: """
@@ -45,7 +47,7 @@ pipeline {
             """
           )
           if (status != 0) {
-            echo "Pruebas con errores (exit code=${status}). Se continuará para generar reportes."
+            echo "Pruebas con errores (exit code=${status}). Se continuará generando reportes."
             currentBuild.result = 'UNSTABLE'
           }
         }
@@ -54,8 +56,13 @@ pipeline {
 
     stage('Aggregate Reports') {
       steps {
-        // Fuerza la agregación aunque las pruebas hayan fallado
-        bat 'mvn -B -q serenity:aggregate -DskipTests'
+        script {
+          def agg = bat(returnStatus: true, script: 'mvn -B -q serenity:aggregate -DskipTests')
+          if (agg != 0) {
+            echo "Falló serenity:aggregate (exit code=${agg})."
+            if (currentBuild.result == null) { currentBuild.result = 'UNSTABLE' }
+          }
+        }
       }
     }
 
@@ -74,6 +81,7 @@ pipeline {
           } else {
             bat 'dir target /s'
             echo 'Reporte de Serenity no encontrado'
+            if (currentBuild.result == null) { currentBuild.result = 'UNSTABLE' }
           }
         }
       }
