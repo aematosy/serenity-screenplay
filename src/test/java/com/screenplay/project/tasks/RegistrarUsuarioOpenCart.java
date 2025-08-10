@@ -9,6 +9,8 @@ import net.serenitybdd.screenplay.actions.Click;
 import net.serenitybdd.screenplay.actions.Scroll;
 import net.serenitybdd.screenplay.waits.WaitUntil;
 import net.serenitybdd.screenplay.questions.Visibility;
+import net.serenitybdd.screenplay.actions.JavaScriptClick;
+
 
 import static com.screenplay.project.utils.Constants.TIME_SHORT;
 import static net.serenitybdd.screenplay.matchers.WebElementStateMatchers.*;
@@ -16,36 +18,26 @@ import static net.serenitybdd.screenplay.matchers.WebElementStateMatchers.*;
 public class RegistrarUsuarioOpenCart implements Task {
     @Override
     public <T extends Actor> void performAs(T actor) {
-        // Esperar a que la página cargue completamente
-        actor.attemptsTo(
-                WaitUntil.the(OpenCartHomePage.BOTON_MI_CUENTA, isPresent())
-                        .forNoMoreThan(30).seconds()
-        );
+        // Intentar con click normal primero
+        try {
+            System.out.println("Intentando primer click");
+            actor.attemptsTo(
+                    WaitUntil.the(OpenCartHomePage.BOTON_MI_CUENTA, isPresent())
+                            .forNoMoreThan(30).seconds(),
+                    Click.on(OpenCartHomePage.BOTON_MI_CUENTA)
+            );
+        } catch (Exception e) {
+            // Si falla, usar JavaScript click
+            System.out.println("Click normal falló, usando JavaScript click...");
+            actor.attemptsTo(
+                    JavaScriptClick.on(OpenCartHomePage.BOTON_MI_CUENTA)
+            );
+        }
 
-        // Hacer scroll al elemento si es necesario
-        actor.attemptsTo(
-                Scroll.to(OpenCartHomePage.BOTON_MI_CUENTA)
-        );
-
-        // Esperar a que sea visible y clickeable
-        actor.attemptsTo(
-                WaitUntil.the(OpenCartHomePage.BOTON_MI_CUENTA, isVisible())
-                        .forNoMoreThan(TIME_SHORT).seconds(),
-                WaitUntil.the(OpenCartHomePage.BOTON_MI_CUENTA, isClickable())
-                        .forNoMoreThan(TIME_SHORT).seconds()
-        );
-
-        // Hacer clic
-        actor.attemptsTo(
-                Click.on(OpenCartHomePage.BOTON_MI_CUENTA)
-        );
-
-        // Esperar y hacer clic en registrar
+        // Hacer clic en Register
         actor.attemptsTo(
                 WaitUntil.the(OpenCartHomePage.ENLACE_REGISTRAR, isVisible())
-                        .forNoMoreThan(TIME_SHORT).seconds(),
-                WaitUntil.the(OpenCartHomePage.ENLACE_REGISTRAR, isClickable())
-                        .forNoMoreThan(TIME_SHORT).seconds(),
+                        .forNoMoreThan(15).seconds(),
                 Click.on(OpenCartHomePage.ENLACE_REGISTRAR)
         );
     }
