@@ -33,13 +33,21 @@ pipeline {
                     def tagArg = params.ESCENARIO?.trim() ?
                         "-Dcucumber.filter.tags=${params.ESCENARIO.trim()}" : ""
 
-                    bat """
-                        mvn -B verify ${tagArg} ^
-                            -Dserenity.test.environment=ci ^
-                            -Dwebdriver.timeouts.implicitlywait=20000 ^
-                            -Dserenity.take.screenshots=FOR_FAILURES ^
-                            -Dmaven.test.failure.ignore=true
-                    """
+                    def testResult = bat(
+                        returnStatus: true,
+                        script: """
+                            mvn -B verify ${tagArg} ^
+                                -Dserenity.test.environment=ci ^
+                                -Dwebdriver.timeouts.implicitlywait=20000 ^
+                                -Dserenity.take.screenshots=FOR_FAILURES
+                        """
+                    )
+                    // Capturar el resultado para usarlo después
+                    env.TEST_RESULT_CODE = testResult.toString()
+
+                    if (testResult != 0) {
+                        echo "Algunas pruebas fallaron - continuando para generar reportes"
+                    }
                 }
             }
         }
@@ -67,44 +75,37 @@ pipeline {
                             artifacts: 'target/site/serenity/**',
                             allowEmptyArchive: true
                         )
+
+                        echo 'Reporte publicado exitosamente'
                     } else {
                         error 'Reporte no generado'
                     }
                 }
             }
         }
+
+
     }
 
     post {
         always {
             script {
-                // Verificar si hubo fallos basándose en el reporte de Serenity
-                if (fileExists('target/site/serenity/index.html')) {
-                    def buildLogContent = currentBuild.rawBuild.getLog(100).join('\n')
-
-                    if (buildLogContent.contains('Tests failed') && buildLogContent.contains('| 1')) {
-                        echo 'Algunas pruebas fallaron - marcando como UNSTABLE'
-                        currentBuild.result = 'UNSTABLE'
-                    } else if (buildLogContent.contains('Tests failed') && !buildLogContent.contains('| 0')) {
-                        echo 'Pruebas fallaron - marcando como UNSTABLE'
-                        currentBuild.result = 'UNSTABLE'
-                    } else {
-                        echo 'Todas las pruebas pasaron'
-                    }
+                // Determinar estado final basado en el código de resultado de las pruebas
+                if (env.TEST_RESULT_CODE != '0') {
+                    echo 'Algunas pruebas fallaron - marcando como UNSTABLE'
+                    currentBuild.result = 'UNSTABLE'
                 } else {
-                    echo 'No se encontró reporte de Serenity'
-                    currentBuild.result = 'FAILURE'
+                    echo 'Todas las pruebas pasaron'
                 }
             }
         }
 
         success {
-            echo 'Pipeline completado - todas las pruebas pasaron'
+            echo 'Pipeline completado exitosamente - todas las pruebas pasaron'
         }
 
         unstable {
-            echo 'Pipeline completado con pruebas fallidas'
-            echo 'Revisar el reporte de Serenity para detalles'
+            echo 'Pipeline completado con advertencias - revisar pruebas fallidas'
         }
 
         failure {
