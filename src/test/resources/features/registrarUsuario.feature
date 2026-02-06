@@ -4,6 +4,7 @@ Feature: Registro de nuevo usuario en OpenCart
   Como usuario
   Quiero registrar mis datos en el sistema
   Para crear una nueva cuenta en openCart
+  #https://opencart.abstracta.us/index.php
 
   Background:
     Given "Adrian" ingresa a la pagina de open cart
@@ -16,5 +17,4 @@ Feature: Registro de nuevo usuario en OpenCart
     Then el sistema me debe mostrar la pantalla de registro exitoso
     Examples:
       | nombre  | apellido | email     | telefono  | password |
-      | Adrian  | Matos    | aleatorio | 967781772 | 123456   |
-      | Enrique | Bencomo  | aleatorio | 999849655 | 654231   |
+      | Adrian  | Matos    | aleatorio | 999888666 | 123456   |

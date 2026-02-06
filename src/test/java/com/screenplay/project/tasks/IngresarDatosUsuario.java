@@ -1,13 +1,14 @@
 package com.screenplay.project.tasks;
 
+import com.screenplay.project.interactions.EscribirEnCampo;
+import com.screenplay.project.interactions.HacerClicEnElemento;
 import com.screenplay.project.models.Usuario;
 import com.screenplay.project.userinterface.RegistroUsuarioPage;
 import com.screenplay.project.utils.Utils;
+import net.serenitybdd.annotations.Step;
 import net.serenitybdd.screenplay.Actor;
 import net.serenitybdd.screenplay.Task;
 import net.serenitybdd.screenplay.Tasks;
-import net.serenitybdd.screenplay.actions.Click;
-import net.serenitybdd.screenplay.actions.Enter;
 
 public class IngresarDatosUsuario implements Task {
 
@@ -18,21 +19,21 @@ public class IngresarDatosUsuario implements Task {
     }
 
     @Override
+    @Step("{0} ingresa los datos del usuario {usuario}")
     public <T extends Actor> void performAs(T actor) {
-        // Generar correo aleatorio si es necesario
+
         String correoAleatorio = usuario.getEmail().equalsIgnoreCase("aleatorio")
                 ? Utils.generarEmailAleatorio()
                 : usuario.getEmail();
 
-        // Realizar las acciones en la página
         actor.attemptsTo(
-                Enter.theValue(usuario.getNombre()).into(RegistroUsuarioPage.CAMPO_NOMBRE),
-                Enter.theValue(usuario.getApellido()).into(RegistroUsuarioPage.CAMPO_APELLIDO),
-                Enter.theValue(correoAleatorio).into(RegistroUsuarioPage.CAMPO_EMAIL),
-                Enter.theValue(usuario.getTelefono()).into(RegistroUsuarioPage.CAMPO_TELEFONO),
-                Enter.theValue(usuario.getPassword()).into(RegistroUsuarioPage.CAMPO_PASSWORD),
-                Enter.theValue(usuario.getPassword()).into(RegistroUsuarioPage.CAMPO_CONFIRMAR_PASSWORD),
-                Click.on(RegistroUsuarioPage.CHECKBOX_ACEPTAR)
+                EscribirEnCampo.conValor(RegistroUsuarioPage.CAMPO_NOMBRE, usuario.getNombre()),
+                EscribirEnCampo.conValor(RegistroUsuarioPage.CAMPO_APELLIDO, usuario.getApellido()),
+                EscribirEnCampo.conValor(RegistroUsuarioPage.CAMPO_EMAIL, correoAleatorio),
+                EscribirEnCampo.conValor(RegistroUsuarioPage.CAMPO_TELEFONO, usuario.getTelefono()),
+                EscribirEnCampo.conValor(RegistroUsuarioPage.CAMPO_PASSWORD, usuario.getPassword()),
+                EscribirEnCampo.conValor(RegistroUsuarioPage.CAMPO_CONFIRMAR_PASSWORD, usuario.getPassword()),
+                HacerClicEnElemento.en(RegistroUsuarioPage.CHECKBOX_ACEPTAR)
         );
     }
 

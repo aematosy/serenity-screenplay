@@ -6,9 +6,9 @@ import org.junit.runner.RunWith;
 
 @RunWith(CucumberWithSerenity.class)
 @CucumberOptions(
-        features = "src/test/resources/features/registrarUsuario.feature",
-        glue = "com.screenplay.project.stepdefinitions",
-        tags = "@NuevoUsuario",
+        features = "src/test/resources/features/",
+        glue = "com.screenplay.project",
+        tags = "${tags}",
         snippets = CucumberOptions.SnippetType.CAMELCASE,
         plugin = {
                 "pretty",
@@ -16,5 +16,6 @@ import org.junit.runner.RunWith;
                 "junit:target/cucumber.xml"
         }
 )
-public class TestRunner {
-}
+public class TestRunner {}
+
+

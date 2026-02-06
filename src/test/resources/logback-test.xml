@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- WebSocket/Netty (Connection reset) -->
+    <logger name="io.netty.handler" level="ERROR"/>
+    <logger name="io.netty.channel" level="ERROR"/>
+    <logger name="org.openqa.selenium.remote.http.WebSocket" level="ERROR"/>
+
+    <!-- CDP warnings (Chrome 144 mismatch) -->
+    <logger name="org.openqa.selenium.devtools" level="ERROR"/>
+    <logger name="org.openqa.selenium.chromium" level="ERROR"/>
+
+    <logger name="net.serenitybdd.model.buildinfo.PropertyBasedDriverCapabilityRecord" level="ERROR"/>
+    <logger name="org.asynchttpclient.netty.handler" level="ERROR"/>
+    <logger name="org.asynchttpclient" level="ERROR"/>
+    <logger name="io.netty.handler.codec.http.websocketx" level="ERROR"/>
+    <logger name="io.netty.handler.codec" level="ERROR"/>
+
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+
+</configuration>

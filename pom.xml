@@ -107,16 +107,12 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- Source: https://mvnrepository.com/artifact/ch.qos.logback/logback-classic -->
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.2.12</version>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.13.2</version>
-      <scope>test</scope>
+      <version>1.5.25</version>
+      <scope>compile</scope>
     </dependency>
   </dependencies>
 
@@ -146,9 +142,6 @@
             <webdriver.base.url>${webdriver.base.url}</webdriver.base.url>
             <tags>${tags}</tags>
           </systemPropertyVariables>
-          <parallel>classes</parallel>
-          <threadCount>2</threadCount>
-          <forkCount>2</forkCount>
         </configuration>
         <executions>
           <execution>
