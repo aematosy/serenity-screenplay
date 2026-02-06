@@ -36,3 +36,10 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Serenity / Screenplay reports ###
+serenity-reports/
+**/serenity-reports/
+summary.txt
+**/summary.txt
+*.html
